@@ -47,7 +47,8 @@ app.post('/convertir', async (req, res) => {
     const url = `https://www.dailymotion.com/video/${videoId}`;
     const destino = path.join(TMP_DIR, `${idUnico}.mp3`);
 
-    const comando = `"${YTDLP_PATH}" -f bestaudio -x --audio-format mp3 -o "${destino}" "${url}"`;
+    const YTDLP_PATH = path.join(__dirname, 'tools', 'yt-dlp');
+    const comando = `"${YTDLP_PATH}" -f bestaudio -x --audio-format mp3 -o "${destino}" "${videoUrl}"`;
     console.log(`▶️ Ejecutando: ${comando}`);
     execSync(comando, { stdio: 'inherit' });
 
