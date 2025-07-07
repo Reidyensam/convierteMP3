@@ -48,7 +48,6 @@ app.post('/convertir', async (req, res) => {
 
     // ✅ Ejecutar yt-dlp directamente
     const comando = `"${YTDLP_PATH}" -f bestaudio -x --audio-format mp3 -o "${destino}" "${url}"`;
-    console.log(`▶️ Ejecutando: ${comando}`);
     execSync(comando, { stdio: 'inherit' });
 
     if (!fs.existsSync(destino)) {
