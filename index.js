@@ -47,7 +47,7 @@ app.post('/convertir', async (req, res) => {
     const destino = path.join(TMP_DIR, `${archivoId}.mp3`);
 
     // ✅ Ejecutar yt-dlp directamente
-    const comando = `"${YTDLP_PATH}" -f bestaudio -x --audio-format mp3 -o "${destino}" "${url}"`;
+    const YTDLP_PATH = path.join(__dirname, 'tools', 'yt-dlp.exe');
     execSync(comando, { stdio: 'inherit' });
 
     if (!fs.existsSync(destino)) {
