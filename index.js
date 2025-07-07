@@ -8,7 +8,7 @@ const { v4: uuidv4 } = require('uuid');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// ✅ Ruta al ejecutable local de yt-dlp
+// ✅ Ruta al binario local yt-dlp
 const YTDLP_PATH = path.join(__dirname, 'tools', 'yt-dlp');
 
 // 📁 Carpeta temporal para audios
@@ -21,7 +21,7 @@ if (!fs.existsSync(TMP_DIR)) {
 app.use(cors());
 app.use(express.json());
 
-// 🧹 Limpieza automática cada hora
+// 🧹 Limpieza cada hora
 setInterval(() => {
   const ahora = Date.now();
   fs.readdirSync(TMP_DIR).forEach((archivo) => {
@@ -65,10 +65,10 @@ app.post('/convertir', async (req, res) => {
   }
 });
 
-// 📦 Servir MP3 directamente
+// 📦 Servir audios convertidos
 app.use('/audios', express.static(TMP_DIR));
 
-// 🧪 Ruta base de prueba
+// 🌐 Ruta base
 app.get('/', (req, res) => {
   res.send('🎵 Backend Dailymotion-MP3 corriendo con yt-dlp local en Render');
 });
