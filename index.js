@@ -1,46 +1,73 @@
 const express = require('express');
-const path = require('path');
 const cors = require('cors');
+const path = require('path');
 const fs = require('fs');
-const { exec } = require('child_process');
+const { execSync } = require('child_process');
+const { v4: uuidv4 } = require('uuid');
 
 const app = express();
+const PORT = process.env.PORT || 3000;
+
 app.use(cors());
 app.use(express.json());
 
-// Carpeta donde se guardan los audios
-const audiosDir = path.join(__dirname, 'audios');
-if (!fs.existsSync(audiosDir)) fs.mkdirSync(audiosDir);
+// Carpeta temporal
+const TMP_DIR = path.join(__dirname, 'audios');
+if (!fs.existsSync(TMP_DIR)) fs.mkdirSync(TMP_DIR);
 
-// Servir archivos estáticos
-app.use('/audios', express.static(audiosDir));
+// Ruta al binario de yt-dlp incluido en el proyecto
+const YTDLP_PATH = path.join(__dirname, 'tools', 'yt-dlp');
 
-// Endpoint principal
-app.post('/convertir', async (req, res) => {
-  const { videoId } = req.body;
-  if (!videoId) return res.status(400).json({ success: false, error: 'videoId requerido' });
-
-  const salida = path.join(audiosDir, `${videoId}.mp3`);
-  if (fs.existsSync(salida)) {
-    return res.json({ success: true, url: `/audios/${videoId}.mp3`, cached: true });
-  }
-
-  const videoUrl = `https://www.dailymotion.com/video/${videoId}`;
-  const cmd = `yt-dlp -f bestaudio "${videoUrl}" -o - | ffmpeg -i - -vn -ar 44100 -ac 2 -b:a 192k -y "${salida}"`;
-
-  console.log(`🎬 Ejecutando: ${cmd}`);
-  exec(cmd, (error, stdout, stderr) => {
-    if (error) {
-      console.error(`❌ Error al convertir: ${error.message}`);
-      return res.status(500).json({ success: false, error: error.message });
-    }
-    console.log(`✅ Audio convertido: ${salida}`);
-    return res.json({ success: true, url: `/audios/${videoId}.mp3` });
+// 🔁 Limpieza automática
+setInterval(() => {
+  const ahora = Date.now();
+  const archivos = fs.readdirSync(TMP_DIR);
+  archivos.forEach((archivo) => {
+    const ruta = path.join(TMP_DIR, archivo);
+    const stats = fs.statSync(ruta);
+    if (ahora - stats.mtimeMs > 1000 * 60 * 60) fs.unlinkSync(ruta);
   });
+}, 1000 * 60 * 60);
+
+// 🚀 Endpoint de conversión
+app.post('/convertir', async (req, res) => {
+  try {
+    const { videoId } = req.body;
+    if (!videoId || typeof videoId !== 'string') {
+      return res.status(400).json({ success: false, error: 'videoId inválido' });
+    }
+
+    const videoUrl = `https://www.dailymotion.com/video/${videoId}`;
+    const idUnico = uuidv4().slice(0, 8);
+    const destino = path.join(TMP_DIR, `${idUnico}.mp3`);
+
+    const comando = `"${YTDLP_PATH}" -f bestaudio -x --audio-format mp3 -o "${destino}" "${videoUrl}"`;
+    console.log(`🌀 Ejecutando: ${comando}`);
+    execSync(comando, { stdio: 'inherit' });
+
+    if (!fs.existsSync(destino)) {
+      return res.status(500).json({ success: false, error: 'Archivo no generado' });
+    }
+
+    res.json({
+      success: true,
+      url: `/audios/${idUnico}.mp3`,
+      nombre: `${idUnico}.mp3`,
+    });
+  } catch (error) {
+    console.error('❌ Error:', error.message);
+    res.status(500).json({ success: false, error: error.message });
+  }
 });
 
-// Puerto
-const PORT = process.env.PORT || 3000;
+// Servir archivos
+app.use('/audios', express.static(TMP_DIR));
+
+// Prueba básica
+app.get('/', (req, res) => {
+  res.send('🎧 Backend Dailymotion-MP3 activo desde Render con yt-dlp local');
+});
+
 app.listen(PORT, () => {
-  console.log(`🚀 Servidor listo en http://localhost:${PORT}`);
+  console.log(`🚀 Servidor escuchando en puerto ${PORT}`);
 });
