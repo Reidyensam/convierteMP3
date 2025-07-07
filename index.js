@@ -8,7 +8,7 @@ const { v4: uuidv4 } = require('uuid');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// ✅ Ruta al binario local yt-dlp
+// ✅ Ruta al ejecutable yt-dlp local
 const YTDLP_PATH = path.join(__dirname, 'tools', 'yt-dlp');
 
 // 📁 Carpeta temporal para audios
@@ -34,7 +34,7 @@ setInterval(() => {
   });
 }, 1000 * 60 * 60);
 
-// 🎧 Conversión de Dailymotion a MP3
+// 🎧 Conversión de video Dailymotion a MP3
 app.post('/convertir', async (req, res) => {
   try {
     const { videoId } = req.body;
@@ -46,6 +46,7 @@ app.post('/convertir', async (req, res) => {
     const archivoId = uuidv4().slice(0, 8);
     const destino = path.join(TMP_DIR, `${archivoId}.mp3`);
 
+    // ✅ Ejecutar yt-dlp directamente
     const comando = `"${YTDLP_PATH}" -f bestaudio -x --audio-format mp3 -o "${destino}" "${url}"`;
     console.log(`▶️ Ejecutando: ${comando}`);
     execSync(comando, { stdio: 'inherit' });
@@ -65,14 +66,14 @@ app.post('/convertir', async (req, res) => {
   }
 });
 
-// 📦 Servir audios convertidos
+// 📦 Servir MP3 desde carpeta
 app.use('/audios', express.static(TMP_DIR));
 
-// 🌐 Ruta base
+// 🌐 Ruta raíz
 app.get('/', (req, res) => {
-  res.send('🎵 Backend Dailymotion-MP3 corriendo con yt-dlp local en Render');
+  res.send('🎵 Backend Dailymotion-MP3 activo con yt-dlp local');
 });
 
 app.listen(PORT, () => {
-  console.log(`🚀 Escuchando en puerto ${PORT}`);
+  console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
 });
